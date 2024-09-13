@@ -1,0 +1,111 @@
+; destestmini.src
+
+; Author: Matthew Desmond (matt@factorofmatt.com)
+
+; Very simple boot-rom for max mode that simply toggles the 6510 IO register so that
+; we can verify if the 6510 is executing instructions.
+; This program can run on the bare minimum of C64 hardware:
+;     The CIAs, ROMs, RAM, Colour RAM and SID are not required.
+
+; 
+; To verify if your C64 is executing instructions simply plug in a MAX mode cartridge containing this code and
+; probe the Cassette-Port "Write" line.  If it toggles between 0V and 5V then your C64 is executing instructions.
+; If enabled in the source, the screen will flash and/or the two tones will alternate (if the VIC or SID are working
+; well enough).
+
+        ifnconst TRY_VIC
+TRY_VIC         equ 1 ; flash the screen (set to 0 to disable)
+        endif
+        ifnconst TRY_SID
+TRY_SID         equ 1 ; make some noise (set to 0 to disable)
+        endif
+
+tone1           equ 1804 ; A-3
+tone2           equ 3608 ; A-4
+delay_time      equ 10 ; 10 x 100ms is about a second
+
+                processor 6502
+
+                ; delay for some multiple of 100 milliseconds
+                mac delay100ms ; <number>. kills a, x and y
+                ldy #{1}
+.delay_loop_y   ldx #80
+.delay_loop_x1  txa
+                ldx #255
+.delay_loop_x2  dex
+                bne .delay_loop_x2
+                tax
+                dex
+                bne .delay_loop_x1
+                dey
+                bne .delay_loop_y
+                endm
+
+                org $e000 ; start where the MAX mode maps /ROMH
+
+START           sei
+                ldx #$ff
+                txs ; good practice but we're not going to be needing the stack
+                cld
+                lda #%00101111 ; loram, hiram, charen, cass-write, cass-motor OUT, cass-sense IN
+                sta $0 ; set DDR
+                lda #%00110111 ; VIC bank 0, I/O enabled, cass-write 0, cass-motor 1 (off)
+
+        if TRY_VIC == 1
+                lda #$00
+                sta $d020 ; border
+                lda #%00000000
+                sta $d011 ; blank screen
+        endif
+        if TRY_SID == 1
+                lda #%00000000 ; fast attack/decay
+                sta $d405
+                lda #%11110000 ; high sustain, fast release
+                sta $d406
+                lda #%00100000 ; sawtooth, no gate
+                sta $d404
+                lda #%10001111 ; no filters, volume 15
+                sta $d418
+        endif
+forever         ; part 1
+                lda $1
+                ora #%00101000 ; set cass-write and cass-motor to 1
+                sta $1
+        if TRY_VIC
+                lda #$00
+                sta $d020
+        endif
+        if TRY_SID
+                lda #<tone1
+                sta $d400 ; voice 1 freq lsb = 0
+                lda #>tone1
+                sta $d401
+                lda #%00100001 ; sawtooth, gate
+                sta $d404
+        endif
+                delay100ms delay_time ; about a second
+
+                ; part 2
+                lda $1
+                and #%11010111 ; set cass-write and cass-motor to 0
+                sta $1
+        if TRY_VIC
+                lda #$01
+                sta $d020
+        endif
+        if TRY_SID
+                lda #<tone2
+                sta $d400 ; voice 1 freq lsb = 0
+                lda #>tone2
+                sta $d401
+                lda #%00100001 ; sawtooth, gate
+                sta $d404
+        endif
+                delay100ms delay_time ; about a second
+
+                jmp forever
+
+                org $fffa
+                DC.w START ; nmi - just restart
+                DC.w START ; boot
+                DC.w START ; irq - just restart
