@@ -16,7 +16,7 @@
 ; conductor from the right when looking from behind, top or bottom). If the voltage swaps between 0 volts and
 ; about 3-5 volts each for 1 second repeatedly then your C64 is executing instructions.
 
-; Alternatively you can attach and LED and 390R resistor between the GND and MOTOR conductors.  The LED has to be
+; Alternatively you can attach an LED and 390R resistor between the GND and MOTOR conductors.  The LED has to be
 ; attached between the GND and MOTOR conductors in the correct polarity.  The cathode (short-leg, flat-side) of
 ; the LED should attach to the GND conductor and the anode (long-leg) of the LED should attach via the resistor
 ; to the MOTOR conductor.
@@ -42,7 +42,7 @@
 ; You can use small crocodile or alligator clip to attach to the GND and WRITE, just be sure to only touch the
 ; copper trace (top and bottom) of the signal you are after.
 ;
-; If you wish to make your LED fixture more permanent you can buy a 5-pin 0.156-inch edge connector from your
+; If you wish to make your LED fixture more permanent you can buy a 6-pin 0.156-inch edge connector from your
 ; favourite online electronic components retailer. Simply solder the LED/resistor to the appropriate pins on
 ; the edge connector.  Be sure to clearly write the word "TOP" on your new fixture as plugging it in upside-down
 ; may cause damage to your 6510.
@@ -59,10 +59,13 @@ tone1           equ 1804 ; A-3
 tone2           equ 3608 ; A-4
 delay_time      equ 10 ; 10 x 100ms is about a second
 
+                include "date.src"
+                include "version.src"
+
                 processor 6502
 
-                ; delay for some multiple of 100 milliseconds
-                mac delay100ms ; <number>. kills a, x and y
+                ; delay for some multiple of 100 milliseconds (in Y)
+                mac delay100ms ; <number>. kills A, X and Y
                 ldy #{1}
 .delay_loop_y   ldx #80
 .delay_loop_x1  txa
@@ -76,8 +79,14 @@ delay_time      equ 10 ; 10 x 100ms is about a second
                 bne .delay_loop_y
                 endm
 
-                org $e000 ; start where the MAX mode maps /ROMH
+                org $e000, 0 ; start where the MAX mode maps /ROMH
 
+                ; just a little embedded information
+                dc.b "DesTestMini version ", VERSION, ", Matthew Desmond, ", DATE, ".  "
+                dc.b "factorofmatt.com  "
+                dc.w 0
+
+                ; the main entry point
 START           sei
                 ldx #$ff
                 txs ; good practice but we're not going to be needing the stack
@@ -97,7 +106,7 @@ START           sei
                 sta $d405
                 lda #%11110000 ; high sustain, fast release
                 sta $d406
-                lda #%00100000 ; sawtooth, no gate
+                lda #%00100001 ; sawtooth, gate
                 sta $d404
                 lda #%10001111 ; no filters, volume 15
                 sta $d418
@@ -115,8 +124,6 @@ forever         ; part 1
                 sta $d400 ; voice 1 freq lsb = 0
                 lda #>tone1
                 sta $d401
-                lda #%00100001 ; sawtooth, gate
-                sta $d404
         endif
                 delay100ms delay_time ; about a second
 
@@ -133,8 +140,6 @@ forever         ; part 1
                 sta $d400 ; voice 1 freq lsb = 0
                 lda #>tone2
                 sta $d401
-                lda #%00100001 ; sawtooth, gate
-                sta $d404
         endif
                 delay100ms delay_time ; about a second
 
@@ -142,5 +147,5 @@ forever         ; part 1
 
                 org $fffa
                 DC.w START ; nmi - just restart
-                DC.w START ; boot
+                DC.w START ; boot enty point
                 DC.w START ; irq - just restart

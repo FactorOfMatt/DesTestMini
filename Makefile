@@ -7,9 +7,17 @@ all: destestmini.rom destestmini-nosid.rom destestmini-novic.rom destestmini-nov
 
 ASM=dasm # I've used an ancient version of Dillon's marvellous assembler I've maintained over the years.
 ASM_OPTS=-f3 -v0 # adjust this to suit your assembler.  The output should be 8192 bytes, no header.
+VERSION=0.1
+
+# create date and version file
+date.src:
+	@date +"DATE equ \"%d %b %Y\"" >date.src
+
+version.src:
+	@echo "VERSION equ \"$(VERSION)\"" >version.src
 
 # construct the default version (with SID and VIC)
-destestmini.rom: destestmini.src Makefile
+destestmini.rom: destestmini.src date.src version.src Makefile
 	$(ASM) $< $(ASM_OPTS) -l$(basename $@).lis -o$@ -DTRY_VIC=1 -DTRY_SID=1
 	@cat $@ $@ > $(basename $@)_vice.rom
 
@@ -40,5 +48,12 @@ test-nosid: destestmini-novic.rom
 test-novic-nosid: destestmini-novic.rom
 	x64 -default -ntsc -cartultimax destestmini-novic-nosid_vice.rom
 
+release: destestmini.rom destestmini-novic.rom destestmini-nosid.rom destestmini-novic-nosid.rom \
+    destestmini_vice.rom destestmini-novic_vice.rom destestmini-nosid_vice.rom destestmini-novic-nosid_vice.rom \
+	LICENSE.txt README.md
+	rm -f destest-mini-v$(VERSION).zip
+	zip -j destest-mini-v$(VERSION).zip $^
+
+
 clean:
-	@rm -f *.rom *.lis
+	@rm -f *.rom *.lis date.src version.src

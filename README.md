@@ -1,12 +1,20 @@
 # DesTestMini
 
-A tiny ROM-based diagnostic for the C64 that affords the best opportunity to see if at least the processor is executing instructions.
+by Matthew Desmond
+
+DesTestMini is a tiny (hence 'mini') ROM-based diagnostic for the C64 that affords the best opportunity to see if at least the processor is executing instructions.
 
 ## Why
 A C64 might show a black screen for many reasons.  Knowing where to start can be a little daunting.  Try this first.
 
 This small diagnostic can be used to determine if at least the CPU is running, and that's a good start.
-No assumptions are made about the state of the machine: The ROMs, RAM, CIAs, Colour RAM and SID need not be present.
+No assumptions are made about the state of the machine: The ROMs, RAM, CIAs, Colour RAM and SID need not be present
+- indeed removing these chips, if socketed, is recommended (though the test can use the SID if present).  Knowing if
+the CPU is capable of executing instructions will help you determine your next steps. If the CPU isn't running then
+you'll want to diagnose voltages, the clock and the reset circuitry.  If the CPU is running then you can concentrate
+on other common causes of failure such as bad RAM, faulty decode logic or bad ICs corrupting the address or data buses.
+The exact steps to diagnose and repair your C64 are out of scope for this document, though many excellent guides can be
+found on the internet.
 
 ## Building
 This project was written in a Linux environment but should be relatively simple to adapt to other environments.  You
@@ -71,12 +79,12 @@ for 1 second repeatedly then your C64 is executing instructions.
 Alternatively you can attach and LED and 390R resistor between the GND and MOTOR conductors.  The LED has to be
 attached between the GND and MOTOR conductors in the correct polarity.  The cathode (short-leg, flat-side) of
 the LED should attach to the GND conductor and the anode (long-leg) of the LED should attach via the resistor
-to the MOTOR conductor.
-Note 1: the resistor can attach to either the cathode or anode.
+to the MOTOR conductor.  
+Note 1: the resistor can attach to either the cathode or anode.  
 Note 2: the WRITE signal can also be used however it is connected directly to the 6510 and won't supply as
-        much current to light the LED.
+        much current to light the LED.  
 Note 3: The value for the resistor (390R) should work for most red LEDs, but can be substitued as necessary
-for different LEDs.  The voltage of the MOTOR signal is about 10V with no load.
+for different LEDs.  The voltage of the MOTOR signal is about 10V with no load.  
 
     1 2 3 4 5 6   C64 cassette-port (viewed from the rear)
     -----------  
@@ -105,3 +113,11 @@ The option exists to enable flashing the VIC screen as a visual indication that 
 
 ### SID
 The option also exists to have the SID emit alternating tones as a sonic indication that the CPU is running.  SID chips are not the most reliable of ICs so not hearing anything isn't necessarily and indication of the CPU not running.
+
+## Shameless website plug
+Please visit factorofmatt.com to check-out my other vintage computer projects (old and new).
+
+## Acknowledgements
+The impetus for this project emerged from disussions with Adrian Black concerning Commodore 64 failure modes and
+possible diagnostics. Eventually, we came up with this idea (Nope! It was all Adrian).
+My thanks and appreciation to Adrian for his help, support and encouragement.
